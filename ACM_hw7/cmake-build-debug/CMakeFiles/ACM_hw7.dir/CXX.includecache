@@ -1,0 +1,28 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/Users/greg/Study/CLionProjects/ACM_hw7/main.cpp
+iostream
+-
+vector
+-
+cstdlib
+-
+string
+-
+complex
+-
+algorithm
+-
+iomanip
+-
+complex
+-
+initializer_list
+-
+
