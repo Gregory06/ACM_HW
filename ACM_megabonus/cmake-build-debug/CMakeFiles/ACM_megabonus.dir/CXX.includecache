@@ -1,0 +1,24 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/Users/greg/Study/CLionProjects/ACM_megabonus/main.cpp
+vector
+-
+cstdint
+-
+iostream
+-
+cmath
+-
+algorithm
+-
+time.h
+-
+cstdlib
+-
+
