@@ -9,7 +9,7 @@
 #include <initializer_list>
 
 const double PI = std::acos(-1);
-const double eps = 0.0000001;
+const double eps = 10e-6;
 
 // Реализуте пропущенные методы
 // в качестве Т будет использоваться std::complex<float> // <double> // <long double>
@@ -360,13 +360,13 @@ namespace SubstringMatching {
 
 } // namespace SubstringMatcher
 
-
 std::vector<size_t> SubstringMatching::FindSubstrings(const std::string& str, const std::string& pattern) {
     std::vector<std::complex<double>> pattern_vec(pattern.begin(), pattern.end());
     std::vector<std::complex<double>> corpus_vec(str.begin(), str.end());
     size_t pattern_len(pattern.length()), corpus_len(str.length());
     std::complex<double> pattern_sum(0);
     std::complex<double> corpus_sum(0);
+    std::vector<std::complex<double>>::iterator itr;
     std::vector<size_t> result;
 
     for (auto i = pattern_vec.begin(); i != pattern_vec.end(); i++)
@@ -383,7 +383,7 @@ std::vector<size_t> SubstringMatching::FindSubstrings(const std::string& str, co
     for(size_t i = 1; i < corpus_len - pattern_len; i++)
         output.push_back(output[i-1] + std::complex<double>(2)*(multy_coefficents[pattern_len-2+i] - multy_coefficents[pattern_len-1+i]) - pow(corpus_vec[i-1],2) + pow(corpus_vec[pattern_len-1+i],2));
 
-    std::vector<std::complex<double>>::iterator itr = output.begin();
+    itr = output.begin();
     while (itr != output.end()) {
         itr = std::find_if(itr, output.end(), [](std::complex<double> a) { return (abs(a) < eps); });
         if (itr != output.end()) {
@@ -391,6 +391,71 @@ std::vector<size_t> SubstringMatching::FindSubstrings(const std::string& str, co
             itr++;
         }
     }
+    return result;
+}
+
+#define process_str(vec, itr) \
+while (itr != vec.end()) { \
+    itr = std::find(itr, vec.end(), std::complex<double>('?')); \
+    if (itr != vec.end()) { \
+        vec[std::distance(vec.begin(), itr)] = 0;\
+        itr++; \
+    } \
+}
+
+#define qwertqweqwe 1
+
+std::vector<size_t> SubstringMatching::FindMatches(const std::string& str, const std::string& pattern) {
+    std::vector<std::complex<double>> pattern_vec(pattern.begin(), pattern.end());
+    std::vector<std::complex<double>> corpus_vec(str.begin(), str.end());
+    size_t pattern_len(pattern.length()), corpus_len(str.length());
+    std::vector<std::complex<double>>::iterator itr;
+    std::vector<size_t> result;
+
+    itr = pattern_vec.begin();
+    process_str(pattern_vec, itr)
+
+    itr = corpus_vec.begin();
+    process_str(corpus_vec, itr)
+
+    std::vector<std::complex<double>> pattern_vec_scnd_deg(pattern_vec);
+    std::vector<std::complex<double>> pattern_vec_thrd_deg(pattern_vec);
+    std::vector<std::complex<double>> corpus_vec_scnd_deg(corpus_vec);
+    std::vector<std::complex<double>> corpus_vec_thrd_deg(corpus_vec);
+
+    std::for_each(pattern_vec_scnd_deg.begin(), pattern_vec_scnd_deg.end(), [](std::complex<double> &a) {a = pow(a,2);});
+    std::for_each(pattern_vec_thrd_deg.begin(), pattern_vec_thrd_deg.end(), [](std::complex<double> &a) {a = pow(a,3);});
+
+    std::for_each(corpus_vec_scnd_deg.begin(), corpus_vec_scnd_deg.end(), [](std::complex<double> &a) {a = pow(a,2);});
+    std::for_each(corpus_vec_thrd_deg.begin(), corpus_vec_thrd_deg.end(), [](std::complex<double> &a) {a = pow(a,3);});
+
+    std::reverse(pattern_vec.begin(), pattern_vec.end());
+    std::reverse(pattern_vec_scnd_deg.begin(), pattern_vec_scnd_deg.end());
+    std::reverse(pattern_vec_thrd_deg.begin(), pattern_vec_thrd_deg.end());
+
+    Polynomial pattern_poly(pattern_vec), scnd_deg_pattern_poly(pattern_vec_scnd_deg), thrd_deg_pattern_poly(pattern_vec_thrd_deg), \
+               corpus_poly(corpus_vec), scnd_deg_corpus_poly(corpus_vec_scnd_deg), thrd_deg_corpus_poly(corpus_vec_thrd_deg);
+
+    Polynomial frst_multy_poly = thrd_deg_pattern_poly * corpus_poly;
+    Polynomial scnd_multy_poly = scnd_deg_pattern_poly * scnd_deg_corpus_poly;
+    Polynomial thrd_multy_poly = pattern_poly * thrd_deg_corpus_poly;
+    std::vector<std::complex<double>> frst_multy_coefficents = frst_multy_poly.GetCoefficients(), \
+                                      scnd_multy_coefficents = scnd_multy_poly.GetCoefficients(), \
+                                      thrd_multy_coefficents = thrd_multy_poly.GetCoefficients();
+
+    std::vector<std::complex<double>> output;
+    for(size_t i = 0; i <= corpus_len - pattern_len; i++)
+        output.push_back(frst_multy_coefficents[pattern_len-1+i] - std::complex<double>(2)*scnd_multy_coefficents[pattern_len-1+i] + thrd_multy_coefficents[pattern_len-1+i]);
+    
+    itr = output.begin();
+    while (itr != output.end()) {
+        itr = std::find_if(itr, output.end(), [](std::complex<double> a) { return (abs(a) < eps); });
+        if (itr != output.end()) {
+            result.push_back(std::distance(output.begin(), itr));
+            itr++;
+        }
+    }
+
     return result;
 }
 
@@ -403,12 +468,11 @@ std::vector<size_t> SubstringMatching::FindSubstrings(const std::string& str, co
 
 int main() {
 
-    std::string corpus("greg is the best the fuck"), pattern("the");
+    std::string corpus("abcdebdbbdb"), pattern("b?");
 
-    auto out = SubstringMatching::FindSubstrings(corpus, pattern);
+    auto out = SubstringMatching::FindMatches(corpus, pattern);
     for (auto i = out.begin(); i != out.end(); i++)
         std::cout << *i << ' ';
-
 
 //    for (std::vector<std::complex<double>>::const_iterator i = v.begin(); i != v.end(); i++)
 //        std::cout << *i << ' ';
