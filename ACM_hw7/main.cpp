@@ -210,9 +210,9 @@ Polynomial<T>& Polynomial<T>::clean() {
             continue;
         }
 
-        if (coefficients_[i].real() < eps)
+        if (abs(coefficients_[i].real()) < eps)
             coefficients_[i] = T(0, coefficients_[i].imag());
-        if (coefficients_[i].imag() < eps)
+        if (abs(coefficients_[i].imag()) < eps)
             coefficients_[i] = T(coefficients_[i].real());
 
     }
@@ -446,7 +446,7 @@ std::vector<size_t> SubstringMatching::FindMatches(const std::string& str, const
     std::vector<std::complex<double>> output;
     for(size_t i = 0; i <= corpus_len - pattern_len; i++)
         output.push_back(frst_multy_coefficents[pattern_len-1+i] - std::complex<double>(2)*scnd_multy_coefficents[pattern_len-1+i] + thrd_multy_coefficents[pattern_len-1+i]);
-    
+
     itr = output.begin();
     while (itr != output.end()) {
         itr = std::find_if(itr, output.end(), [](std::complex<double> a) { return (abs(a) < eps); });
@@ -464,52 +464,93 @@ std::vector<size_t> SubstringMatching::FindMatches(const std::string& str, const
 // Обратите внимание, что при проведении прямого и обратного преобразования для многочлена с
 // целыми коэффициентами, новые коэффициенты могут выйти дробными и трубующими округления.
 
+namespace Test {
+    template<typename T>
+    void FourierCheck(const std::vector<T> a) {
+        std::vector<T> Ans1(Polynomial<T>(FFT::FourierTransform(a)).clean().GetCoefficients());
+        std::vector<T> Ans2(Polynomial<T>(FFT::FastFourierTransform(a)).clean().GetCoefficients());
+        if (Polynomial<T>(Ans1) == Polynomial<T>(Ans2))
+            std::cout << "OK: FFT test for vector " << Polynomial(a) << " passed" << std::endl;
+        else
+            std::cout << "WRONG: " << Polynomial(Ans1) << " != "
+                      << Polynomial(Ans2) << std::endl;
+    }
+
+    template<typename T>
+    void InverseFourierCheck(std::vector<T> &a) {
+        std::vector<T> Ans1(Polynomial<T>(FFT::InverseFourierTransform(a)).clean().GetCoefficients());
+        std::vector<T> Ans2(Polynomial<T>(FFT::FastInverseFourierTransform(a)).clean().GetCoefficients());
+        if (Polynomial<T>(Ans1) == Polynomial<T>(Ans2))
+            std::cout << "OK: IFFT test for vector " << Polynomial(a) << " passed" << std::endl;
+        else
+            std::cout << "WRONG: " << Polynomial(Ans1) << " != "
+                      << Polynomial(Ans2) << std::endl;
+    }
+
+    template<typename T>
+    void MultipyTest(Polynomial<T> a, const Polynomial<T> b, const Polynomial<T> True) {
+        if (a * b == True)
+            std::cout << "OK: Multiply test for polynomials " << a << " & " << b << " passed" << std::endl;
+        else
+            std::cout << "WRONG: " << a * b << " != " << True << std::endl;
+    }
+
+    template<typename T>
+    void DegreeTest( Polynomial<T> a, const size_t b, const Polynomial<T> True) {
+        if ((a ^ b) == True)
+            std::cout << "OK: Degree test for polynomial " << a << "^" << b << " passed" << std::endl;
+        else
+            std::cout << "WRONG: " << (a ^ b) << " != " << True << std::endl;
+    }
+
+    void StringSearch(const std::string &str, const std::string &pattern, std::vector<size_t> True) {
+        std::vector<size_t> Ans(SubstringMatching::FindSubstrings(str, pattern));
+        if (Ans == True)
+            std::cout << "OK: Search test for string " << str << " & pattern " << pattern << " passed" << std::endl;
+        else {
+            std::cout << "WRONG: ";
+            for (auto i = Ans.begin(); i != Ans.end(); i++)
+                std::cout << *i << ' ';
+            std::cout << " != ";
+            for (auto i = True.begin(); i != True.end(); i++)
+                std::cout << *i << ' ';
+            std::cout << std::endl;
+        }
+    }
+
+    void StringMatch(const std::string &str, const std::string &pattern, std::vector<size_t> True) {
+        std::vector<size_t> Ans(SubstringMatching::FindMatches(str, pattern));
+        if (Ans == True)
+            std::cout << "OK: Search test for string " << str << " & pattern " << pattern << " passed" << std::endl;
+        else {
+            std::cout << "WRONG: ";
+            for (auto i = Ans.begin(); i != Ans.end(); i++)
+                std::cout << *i << ' ';
+            std::cout << " != ";
+            for (auto i = True.begin(); i != True.end(); i++)
+                std::cout << *i << ' ';
+            std::cout << std::endl;
+        }
+    }
+}
+
 
 
 int main() {
 
-    std::string corpus("abcdebdbbdb"), pattern("b?");
+    std::vector<std::complex<double>> a({1,2,3,0}), b({4,5,6,7,8,0,0,0});
+    size_t deg(4);
+    std::string corpus("hi there, how are you. he-he-he."), pattern("he"), joker_pattern("h??");
 
-    auto out = SubstringMatching::FindMatches(corpus, pattern);
-    for (auto i = out.begin(); i != out.end(); i++)
-        std::cout << *i << ' ';
+    Test::FourierCheck(a);
+    Test::FourierCheck(b);
+    Test::InverseFourierCheck(a);
+    Test::InverseFourierCheck(b);
+    Test::MultipyTest(Polynomial(a), Polynomial(b), Polynomial<std::complex<double>>({4, 13, 28, 34, 40, 37, 24}));
+    Test::DegreeTest(Polynomial(a), deg, Polynomial<std::complex<double>>({1, 8, 36, 104, 214, 312, 324, 216, 81}));
+    Test::DegreeTest(Polynomial(b), deg, Polynomial<std::complex<double>>({256, 1280, 3936, 9552, 20049, 35784, 56036,
+                                                               78568, 99126, 110872, 111524, 100488, 79521, 53472, 31104, 14336, 4096}));
+    Test::StringSearch(corpus, pattern, std::vector<size_t> ({4, 23, 26, 29}));
+    Test::StringMatch(corpus, joker_pattern, std::vector<size_t> ({0, 4, 10, 23, 26, 29}));
 
-//    for (std::vector<std::complex<double>>::const_iterator i = v.begin(); i != v.end(); i++)
-//        std::cout << *i << ' ';
-
-//    std::cout << pow(FFT::GetRoot<std::complex<double>>(4), -2);
-//    Polynomial<std::complex<double>> p(std::vector<std::complex<double>>{1, 2, 1});
-//    std::vector<std::complex<double>> a = std::vector<std::complex<double>>{1,2,1,0,5,6,7,8}, b = std::vector<std::complex<double>>{4,8,4,12};
-//    std::vector<std::complex<double>> a = FFT::AddPadding<std::complex<double>>(std::vector<std::complex<double>>{1,1}, pow(2, (size_t) std::ceil(log(4)/log(2))));
-//    for (std::vector<std::complex<double>>::const_iterator i = a.begin(); i != a.end(); ++i)
-//        std::cout << *i << ' ';
-//    std::vector<std::complex<double>> b = FFT::FastFourierTransform(a);
-//    std::vector<std::complex<double>> c = FFT::FastInverseFourierTransform(a);
-
-//    std::vector<std::complex<double>> c = FFT::FastInverseFourierTransform(std::vector<std::complex<double>>{1,1});
-//    Polynomial<std::complex<double>> p1({1, 2}), p2({1, 1});
-
-//    Polynomial<std::complex<double>> p3 = p1 ^ 3;
-
-//    std::cout << p3;
-//    std::cout << std::endl;
-//    for (std::vector<std::complex<double>>::const_iterator i = c.begin(); i != c.end(); ++i)
-//        std::cout << *i << ' ';
-
-//    c = FFT::FastInverseFourierTransform(FFT::FastFourierTransform(a));
-//    std::cout << std::endl;
-//    for (std::vector<std::complex<double>>::const_iterator i = c.begin(); i != c.end(); ++i)
-//        std::cout << *i << ' ';
-//    std::cout << std::endl;
-//
-//    c = FFT::InverseFourierTransform(a);
-//    std::cout << std::endl;
-//    for (std::vector<std::complex<double>>::const_iterator i = c.begin(); i != c.end(); ++i)
-//        std::cout << *i << ' ';
-//    std::cout << std::endl;
-
-//    c = FFT::FastInverseFourierTransform(b);
-//    std::cout << std::endl;
-//    for (std::vector<std::complex<double>>::const_iterator i = c.begin(); i != c.end(); ++i)
-//        std::cout << *i << ' ';
 }
