@@ -1,0 +1,22 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/Users/greg/Study/CLionProjects/ACM_hw7/main.cpp
+limits
+-
+cstdint
+-
+iostream
+-
+vector
+-
+math.h
+-
+time.h
+-
+
